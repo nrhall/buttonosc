@@ -1,0 +1,62 @@
+{
+  "misc": {
+    "mac": "A8:61:0A:AF:00:16",
+    "heartbeat_pin": 9
+  },
+  "buttons": [
+    {
+      "id": 0,
+      "led_pin": 2,
+      "button_pin": 54,
+      "osc_string": "/go",
+      "target": 0
+    },
+    {
+      "id": 1,
+      "led_pin": 3,
+      "button_pin": 55,
+      "osc_string": "/panic",
+      "target": 0
+    },
+    {
+      "id": 2,
+      "led_pin": 5,
+      "button_pin": 56,
+      "osc_string": "/select/next",
+      "target": 0
+    },
+    {
+      "id": 3,
+      "led_pin": 6,
+      "button_pin": 57,
+      "osc_string": "/select/previous",
+      "target": 0
+    },
+    {
+      "id": 4,
+      "led_pin": 7,
+      "button_pin": 58,
+      "osc_string": "/go",
+      "target": 1
+    },
+    {
+      "id": 5,
+      "led_pin": 8,
+      "button_pin": 59,
+      "osc_string": "/back",
+      "target": 1
+    }
+  ],
+  "targets": [
+    {
+      "id": 0,
+      "server": "10.0.1.163",
+      "port": 53000
+    },
+    {
+      "id": 1,
+      "server": "10.0.1.163",
+      "port": 32000
+    }
+  ]
+}
