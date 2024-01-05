@@ -13,7 +13,7 @@ void setup() {
   while(!Serial && !Serial.available()){}
 
   // initialise logging
-  Log.begin(LOG_LEVEL_TRACE, &Serial);
+  Log.begin(LOG_LEVEL_VERBOSE, &Serial);
 
   // load configuration
   Config *config = new Config("config.txt");

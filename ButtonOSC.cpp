@@ -9,10 +9,11 @@ EthernetUDP udp;
 static void onButtonClick(void *context) {
   OSCContext* osc_context = (OSCContext*)context;
 
-  Log.traceln(F("onButtonClick: %s %s %s"), osc_context->server, String(osc_context->port).c_str(), osc_context->string);
+  Log.traceln(F("onButtonClick(start): %s %s %s"), osc_context->server, String(osc_context->port).c_str(), osc_context->string);
 
   // create the OSC message
   OSCMessage msg(osc_context->string);
+
   // get the target IP
   IPAddress* target_ip = ip_str_to_address(osc_context->server);
 
@@ -21,6 +22,7 @@ static void onButtonClick(void *context) {
   msg.send(udp);
   udp.endPacket();
   msg.empty();
+  Log.traceln(F("onButtonClick(end): %s %s %s"), osc_context->server, String(osc_context->port).c_str(), osc_context->string);
 }
 
 ButtonOSC::ButtonOSC(Config* config) : _config(config) {
@@ -66,7 +68,6 @@ void ButtonOSC::loop() {
       _heartbeat_led->fade(150, 50, 2000);
       is_faded_in = false;
     }
-
-    _heartbeat_led->loop();
   }
+  _heartbeat_led->loop();
 }

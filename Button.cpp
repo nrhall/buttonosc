@@ -43,7 +43,7 @@ void Button::on_click() {
   Log.traceln(F("button %d pressed"), _id);
   led_off();
   (*(_callback))(_context);
-  led_on(250);
+  led_on(LED_HOLDTIME);
 }
 
 void Button::loop() {

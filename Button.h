@@ -4,7 +4,7 @@
 #include <OneButton.h>
 #include <ezLED.h>
 
-#define LED_HOLDTIME 250
+#define LED_HOLDTIME 125
 
 extern "C" {
 typedef void (*callback_function)(void *);

@@ -6,25 +6,25 @@
 String ConfigButton::to_string() {
   return String("Button(")
       + String("id=") + String(id)
-      + String("button=") + String(button_pin)
-      + String("led=") + String(led_pin)
-      + String("osc=") + osc_string
-      + String("target=") + String(target)
+      + String(" button=") + String(button_pin)
+      + String(" led=") + String(led_pin)
+      + String(" osc=") + osc_string
+      + String(" target=") + String(target)
       + String(")");
 }
 
 String ConfigTarget::to_string() {
   return String("Target(")
       + String("id=") + String(id)
-      + String("server=") + String(server)
-      + String("port=") + String(port)
+      + String(" server=") + String(server)
+      + String(" port=") + String(port)
       + String(")");
 }
 
 String ConfigMisc::to_string() {
   return String("Misc(")
       + String("mac=") + String(mac)
-      + String("heartbeat_pin=") + String(heartbeat_pin)
+      + String(" heartbeat_pin=") + String(heartbeat_pin)
       + String(")");
 }
 
@@ -40,7 +40,7 @@ String Config::to_string() {
     _targets += targets[i]->to_string();
     _targets += String("\n");
   }
-  return String("Config(\n") + _misc + _buttons + _targets;
+  return String("Config(\n") + _misc + _buttons + _targets + String(")");
 }
 
 // Loads the configuration from a file
