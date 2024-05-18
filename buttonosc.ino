@@ -19,7 +19,7 @@ void setup() {
   Config *config = new Config("config.txt");
 
   // setup networking
-  network_setup(config->misc->mac);
+  network_setup(config);
   
   // setup the buttons
   buttonOSC = new ButtonOSC(config);

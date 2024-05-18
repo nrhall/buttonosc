@@ -1,7 +1,23 @@
 {
   "misc": {
-    "mac": "A8:61:0A:AF:00:16",
     "heartbeat_pin": 9
+  },
+  "network": {
+    "ethernet": {
+      "mac": "A8:61:0A:AF:00:16",
+      "ip": "192.168.0.10",
+      "mask": "255.255.255.0",
+      "gw": "192.168.0.1",
+      "dns": "8.8.8.8"
+    },
+    "wifi": {
+      "ssid": "",
+      "key": "",
+      "ip": "",
+      "mask": "",
+      "gw": "",
+      "dns": ""
+    }
   },
   "buttons": [
     {
@@ -15,48 +31,48 @@
       "id": 1,
       "led_pin": 3,
       "button_pin": 55,
-      "osc_string": "/panic",
+      "osc_string": "/back",
       "target": 0
     },
     {
       "id": 2,
       "led_pin": 5,
       "button_pin": 56,
-      "osc_string": "/select/next",
-      "target": 0
+      "osc_string": "/go",
+      "target": 1
     },
     {
       "id": 3,
       "led_pin": 6,
       "button_pin": 57,
-      "osc_string": "/select/previous",
-      "target": 0
+      "osc_string": "/panic",
+      "target": 1
     },
     {
       "id": 4,
       "led_pin": 7,
       "button_pin": 58,
-      "osc_string": "/go",
+      "osc_string": "/select/next",
       "target": 1
     },
     {
       "id": 5,
       "led_pin": 8,
       "button_pin": 59,
-      "osc_string": "/back",
+      "osc_string": "/select/previous",
       "target": 1
     }
   ],
   "targets": [
     {
       "id": 0,
-      "server": "10.0.1.163",
-      "port": 53000
+      "server": "192.168.10.142",
+      "port": 32000
     },
     {
       "id": 1,
-      "server": "10.0.1.163",
-      "port": 32000
+      "server": "192.168.10.142",
+      "port": 53000
     }
   ]
 }

@@ -17,4 +17,5 @@ struct OSCContext {
   char* server;
   unsigned int port;
   char* string;
+  IPAddress* server_ip;
 };
