@@ -1,6 +1,8 @@
 #include <ezLED.h>
+#include <OSCMessage.h>
 #include "Button.h"
 #include "Config.h"
+#include "network.h"
 
 class ButtonOSC {
   private:
@@ -9,7 +11,7 @@ class ButtonOSC {
     Config *_config;
 
   public:
-    ButtonOSC(Config *config);
+    ButtonOSC(Config *config, NetworkType network_type);
     void loop();
 };
 
@@ -18,4 +20,5 @@ struct OSCContext {
   unsigned int port;
   char* string;
   IPAddress* server_ip;
+  NetworkType network_type;
 };

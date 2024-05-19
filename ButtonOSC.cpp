@@ -1,13 +1,12 @@
 #include <ArduinoLog.h>
 #include <EthernetUdp.h>
-#ifdef UNOWIFIR4
-#include <WiFiUdp.h>
-#endif
-#include <OSCMessage.h>
 #include "ButtonOSC.h"
 #include "network.h"
 
-EthernetUDP udp;
+EthernetUDP eth_udp;
+#ifdef ARDUINO_UNOR4_WIFI
+WiFiUDP wifi_udp;
+#endif
 
 static void onButtonClick(void *context) {
   OSCContext* osc_context = (OSCContext*)context;
@@ -18,14 +17,23 @@ static void onButtonClick(void *context) {
   OSCMessage msg(osc_context->string);
 
   // send the OSC message
-  udp.beginPacket(*(osc_context->server_ip), osc_context->port);
-  msg.send(udp);
-  udp.endPacket();
-  msg.empty();
+  if (osc_context->network_type == WIRED) {
+    eth_udp.beginPacket(*(osc_context->server_ip), osc_context->port);
+    msg.send(eth_udp);
+    eth_udp.endPacket();
+  }
+#ifdef ARDUINO_UNOR4_WIFI 
+  else if (osc_context->network_type == WIRELESS) {
+    wifi_udp.beginPacket(*(osc_context->server_ip), osc_context->port);
+    msg.send(wifi_udp);
+    wifi_udp.endPacket();
+  }
+#endif
+
   Log.traceln(F("OSC: sent [%ul]"), millis());
 }
 
-ButtonOSC::ButtonOSC(Config* config) : _config(config) {
+ButtonOSC::ButtonOSC(Config* config, NetworkType network_type) : _config(config) {
   // setup buttons
   _buttons = (Button**)malloc(sizeof(Button*) * _config->button_count);
   for (int i = 0; i < _config->button_count; i++) {
@@ -41,6 +49,7 @@ ButtonOSC::ButtonOSC(Config* config) : _config(config) {
     osc_context->server_ip = ip_str_to_address(target->server);
     osc_context->port = target->port;
     osc_context->string = button->osc_string;
+    osc_context->network_type = network_type;
     
     // create the button/led pair with associated callback
     switch (button->button_type) {
@@ -51,7 +60,7 @@ ButtonOSC::ButtonOSC(Config* config) : _config(config) {
         _buttons[i] = new WirelessButton(i, button->button_intr, button->button_code, button->led_pin, (void *)osc_context, onButtonClick);
         break;
       default:
-        Log.traceln(F("invalid button type: %d"), button->button_type);
+        Log.errorln(F("invalid button type: %d"), button->button_type);
     }
   }
 
@@ -59,7 +68,17 @@ ButtonOSC::ButtonOSC(Config* config) : _config(config) {
   _heartbeat_led = new ezLED(config->misc->heartbeat_pin);
 
   // create socket for OSC
-  udp.begin(54000);
+  if (network_type == WIRED) {
+    eth_udp.begin(54000);
+  }
+#ifdef ARDUINO_UNOR4_WIFI
+  else if (network_type = WIRELESS) {
+    wifi_udp.begin(54000);
+  }
+#endif
+  else {
+    Log.errorln(F("no network found"));
+  }
 }
 
 void ButtonOSC::loop() {

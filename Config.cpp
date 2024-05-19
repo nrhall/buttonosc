@@ -1,5 +1,3 @@
-#define __BSD_VISIBLE 1
-
 #include <ArduinoLog.h>
 #include <ArduinoJson.h>
 #include <SD.h>
@@ -77,12 +75,12 @@ String Config::to_string() {
 }
 
 // Loads the configuration from a file
-Config::Config(const char *filename) {
+const char *read_file_from_sd(const char *filename) {
   Sd2Card card;
   SdVolume volume;
   SdFile root;
-  SdFile config_file;
-  int length;
+  SdFile _config_file;
+  SDFile config_file;
   
   // tracing
   Log.traceln(F("loading configuration (start)"));
@@ -102,13 +100,32 @@ Config::Config(const char *filename) {
   root.openRoot(volume);
   
   // open the required configuration file
-  config_file.open(root, filename);
-  
-  // read into the json doc
-  DynamicJsonDocument config_doc(2048);
-  DeserializationError error = deserializeJson(config_doc, config_file);
+  _config_file.open(root, filename);
+  config_file = SDFile(_config_file, filename);
+
+  // read the file into a string
+  unsigned long size = config_file.size();
+  char *buffer = new char[size];
+  int error = config_file.read(buffer, size);
   if (error) {
     Log.errorln(F("failed to read file: %s"), filename);
+    while(1);
+  }
+
+  config_file.close();
+
+  return buffer;
+}
+
+void Config::parse_json()
+{
+  int length;
+
+  // read into the json doc
+  DynamicJsonDocument config_doc(2048);
+  DeserializationError error = deserializeJson(config_doc, buffer);
+  if (error) {
+    Log.errorln(F("failed to deserialize JSON"));
     while(1);
   }
 
@@ -334,11 +351,16 @@ Config::Config(const char *filename) {
     _target++;
   }
 
-  // close the file
-  config_file.close();
-
   // tracing
-  Log.traceln(to_string().c_str());
+  //Log.traceln(to_string().c_str());
   Log.traceln(F("loading configuration (end)"));
 }
 
+Config::Config(const char *config, const bool read_from_sd)
+{
+  if (read_from_sd) {
+    buffer = read_file_from_sd(config);
+  } else {
+    buffer = config;
+  }
+}

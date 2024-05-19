@@ -35,8 +35,9 @@ void log_network_config(const char *ip, const char *mask, const char *gw, const 
   Log.verboseln(dns);
 }
 
-void network_setup(Config *config) {
+NetworkType network_setup(Config *config) {
   IPAddress *ip, *mask, *gw, *dns;
+  NetworkType network_type;
 
   Log.traceln(F("network configuration (start)"));
 
@@ -44,6 +45,7 @@ void network_setup(Config *config) {
   Ethernet.init(10);
   if (Ethernet.linkStatus() == LinkON && Ethernet.hardwareStatus() != EthernetNoHardware) {
     Log.traceln(F("found ethernet hardware"));
+    network_type = WIRED;
 
     // wait for link
     while(Ethernet.linkStatus() == LinkOFF) {
@@ -72,15 +74,18 @@ void network_setup(Config *config) {
         Log.errorln(F("failed to configure Ethernet using DHCP"));
         delay(1000);
       }
-
-      // output the local IP
-      IPAddress localIP = Ethernet.localIP();
-      Log.verbose(F("IP address: "));
-      Log.verboseln(localIP);
     }
+
+    // output the local IP
+    Log.verbose(F("IP address: "));
+    Log.verboseln(Ethernet.localIP());
+    Log.verbose(F("Gateway: "));
+    Log.verboseln(Ethernet.gatewayIP());
   }
-#ifdef UNOWIFIR4
+#ifdef ARDUINO_UNOR4_WIFI
   else if (WiFi.status() != WL_NO_SHIELD) {
+    network_type = WIRELESS;
+
     if (strlen(config->network->wifi->ssid) > 0) {
       // check for IP configuration and use it if given
       if (strlen(config->network->wifi->ip) > 0) {
@@ -101,8 +106,7 @@ void network_setup(Config *config) {
       // attempt to connect to WiFi network:
       int status;
       while (status != WL_CONNECTED) {
-        Serial.print("Attempting to connect to WPA SSID: ");
-        Serial.println(config->network->wifi->ssid);
+        Log.verboseln(F("Attempting to connect to WPA SSID: %s"), config->network->wifi->ssid);
 
         // Connect to WPA/WPA2 network:
         status = WiFi.begin(config->network->wifi->ssid, config->network->wifi->key);
@@ -110,18 +114,24 @@ void network_setup(Config *config) {
         // wait 10 seconds for connection:
         delay(10000);
       }
+
+      // output the local IP
+      Log.verboseln(F("IP address: %s"), WiFi.localIP().toString().c_str());
+      Log.verboseln(F("Gateway: %s"), WiFi.gatewayIP().toString().c_str());
     }
   }
 #endif
   else {
     Log.errorln(F("No suitable network device was found."));
+    network_type = NONE;
   }
 
   Log.traceln(F("network configuration (end)"));
+
+  return network_type;
 }
 
 void network_loop() {
-  IPAddress localIP;
   if (Ethernet.hardwareStatus() != EthernetNoHardware && Ethernet.linkStatus() != LinkOFF) {
     switch (Ethernet.maintain()) {
       case 1:
@@ -129,16 +139,14 @@ void network_loop() {
         break;
       case 2:
         Log.verbose(F("DHCP lease renewed successfully: "));
-        localIP = Ethernet.localIP();
-        Log.verboseln(localIP);
+        Log.verboseln(Ethernet.localIP());
         break;
       case 3:
         Log.errorln(F("DHCP lease rebind failed"));
         break;
       case 4:
-        localIP = Ethernet.localIP();
         Log.notice(F("DHCP lease rebound successfully: "));
-        Log.noticeln(localIP);
+        Log.noticeln(Ethernet.localIP());
         break;
       default:
         break;

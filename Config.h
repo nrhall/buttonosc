@@ -65,6 +65,8 @@ class ConfigNetwork {
 };
 
 class Config {
+  private:
+    const char *buffer;
   public:
     ConfigMisc* misc;
     ConfigNetwork* network;
@@ -73,7 +75,8 @@ class Config {
     int button_count;
     int target_count;
 
-    Config(const char *filename);
+    Config(const char *config, const bool read_from_sd);
+    void parse_json();
     String to_string();
   };
 
