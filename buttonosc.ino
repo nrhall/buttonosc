@@ -97,6 +97,15 @@ const char *json1 = R"(
       "button_code": 1084081,
       "osc_string": "/cue/W1/start",
       "target": 0
+    },
+    {
+      "id": 1,
+      "led_pin": 1,
+      "button_intr": 0,
+      "button_type": "wireless",
+      "button_code": 16647425,
+      "osc_string": "/cue/W1/start",
+      "target": 0
     }
   ],
   "targets": [

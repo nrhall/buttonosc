@@ -84,7 +84,12 @@ ButtonOSC::ButtonOSC(Config* config, NetworkType network_type) : _config(config)
 void ButtonOSC::loop() {
   // handle button/LED loops 
   for (int i = 0; i < _config->button_count; i++) {
-    _buttons[i]->loop_with_led();
+    _buttons[i]->loop();
+  }
+
+  // reset (in case states need resetting eacb time around the loop)
+  for (int i = 0; i < _config->button_count; i++) {
+    _buttons[i]->reset();
   }
 
   // pulse the hb LED

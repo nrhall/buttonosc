@@ -16,31 +16,37 @@ WiredButton::WiredButton(const int id, const int button_pin, const int led_pin, 
   _button.attachLongPressStart([](void *ctx){callback_wrapper(ctx);}, this);
 }
 
-void WiredButton::loop() {
+void WiredButton::hw_loop() {
   _button.tick();
 }
 
 // Wireless Button
 WirelessButton::WirelessButton(const int id, const unsigned int button_intr, const unsigned long button_code, const int led_pin, void* context, callback_function callback) : Button(id, led_pin, context, callback)
 {
-  last_click_time = 0;
+  _last_click_time = 0;
   _button_code = button_code;
   _switch.enableReceive(button_intr);
 }
 
-void WirelessButton::loop() {
+void WirelessButton::hw_loop() {
   unsigned long reading = _switch.getReceivedValue();
   unsigned long sample_time = millis();
 
-  if (reading > 0 && reading == _button_code) {
-    // if the button was pressed
-    if ((sample_time - last_click_time) > 200) {
-      on_click();
-    }
+  if (reading > 0) {
+    if (reading == _button_code) {
+      // if the button was pressed
+      //Log.traceln(F("%d %d %d %d"), reading, sample_time, _last_click_time, sample_time - _last_click_time);
+      if ((sample_time - _last_click_time) > 150) {
+        on_click();
+      }
 
-    last_click_time = sample_time;
-    _switch.resetAvailable();
+      _last_click_time = sample_time;
+    }
   }
+}
+
+void WirelessButton::hw_reset() {
+  _switch.resetAvailable();
 }
 
 // Button class
@@ -62,10 +68,6 @@ void Button::led_off(unsigned long delay) {
   _led.turnOFF(delay);
 }
 
-void* Button::context() {
-  return _context;
-}
-
 callback_function Button::callback() {
   return _callback;
 }
@@ -77,9 +79,14 @@ void Button::on_click() {
   led_on(LED_HOLDTIME);
 }
 
-void Button::loop_with_led() {
+void Button::loop() {
   // call the button loop
-  loop();
+  hw_loop();
   // call the LED loop
   _led.loop();
+}
+
+void Button::reset() {
+  // call the hardware reset
+  hw_reset();
 }
