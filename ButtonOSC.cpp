@@ -10,8 +10,9 @@ WiFiUDP wifi_udp;
 
 static void onButtonClick(void *context) {
   OSCContext* osc_context = (OSCContext*)context;
+  unsigned long start = millis();
 
-  Log.traceln(F("OSC: %s %s %s [%ul]"), osc_context->server, String(osc_context->port).c_str(), osc_context->string, millis());
+  Log.trace(F("OSC: %s %d %s"), osc_context->server, osc_context->port, osc_context->string);
 
   // create the OSC message
   OSCMessage msg(osc_context->string);
@@ -29,15 +30,14 @@ static void onButtonClick(void *context) {
     wifi_udp.endPacket();
   }
 #endif
-
-  Log.traceln(F("OSC: sent [%ul]"), millis());
+  Log.traceln(F(" (%ums)"), millis() - start);  
 }
 
 ButtonOSC::ButtonOSC(Config* config, NetworkType network_type) : _config(config) {
   // setup buttons
   _buttons = (Button**)malloc(sizeof(Button*) * _config->button_count);
   for (int i = 0; i < _config->button_count; i++) {
-    Log.traceln(F("creating button %d/%d"), i, _config->button_count);
+    Log.traceln(F("BUTTON: Creating button %d/%d"), i, _config->button_count);
 
     // get the configuration
     ConfigButton* button = config->buttons[i];

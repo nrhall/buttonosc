@@ -1,5 +1,4 @@
 #include <ArduinoLog.h>
-#include <ArduinoJson.h>
 #include <SD.h>
 #include <string.h>
 #include "config.h"
@@ -11,8 +10,8 @@ String ConfigButton::to_string() {
       + String(" button_pin=") + String(button_pin)
       + String(" button_intr=") + String(button_intr)
       + String(" button_code=") + String(button_code)
-      + String(" led=") + String(led_pin)
-      + String(" osc=") + osc_string
+      + String(" led_pin=") + String(led_pin)
+      + String(" osc_string=") + String(osc_string ? osc_string : "")
       + String(" target=") + String(target)
       + String(")");
 }
@@ -20,7 +19,7 @@ String ConfigButton::to_string() {
 String ConfigTarget::to_string() {
   return String("Target(")
       + String("id=") + String(id)
-      + String(" server=") + String(server)
+      + String(" server=") + String(server ? server : "")
       + String(" port=") + String(port)
       + String(")");
 }
@@ -39,22 +38,22 @@ String ConfigNetwork::to_string() {
 
 String ConfigNetworkEthernet::to_string() {
   return String("Network/Ethernet(")
-      + String("mac=") + String(mac)
-      + String(" ip=") + String(ip)
-      + String(" mask=") + String(mask)
-      + String(" gw=") + String(gw)
-      + String(" dns=") + String(dns)
+      + String("mac=") + String(mac ? mac : "")
+      + String(" ip=") + String(ip ? ip : "")
+      + String(" mask=") + String(mask ? mask : "")
+      + String(" gw=") + String(gw ? gw : "")
+      + String(" dns=") + String(dns ? dns : "")
       + String(")");
 }
 
 String ConfigNetworkWifi::to_string() {
   return String("Network/Wifi(")
-      + String("ssid=") + String(ssid)
-      + String(" key=") + String(key)
-      + String(" ip=") + String(ip)
-      + String(" mask=") + String(mask)
-      + String(" gw=") + String(gw)
-      + String(" dns=") + String(dns)
+      + String("ssid=") + String(ssid ? ssid : "")
+      + String(" key=") + String(key ? key : "")
+      + String(" ip=") + String(ip ? ip : "")
+      + String(" mask=") + String(mask ? mask : "")
+      + String(" gw=") + String(gw ? gw : "")
+      + String(" dns=") + String(dns ? dns : "")
       + String(")");
 }
 
@@ -83,18 +82,18 @@ const char *read_file_from_sd(const char *filename) {
   SDFile config_file;
   
   // tracing
-  Log.traceln(F("loading configuration (start)"));
+  Log.traceln(F("CONFIG: Loading configuration from SD"));
 
   // initialise the SD card
-  Log.traceln(F("initializing SD card"));
+  Log.traceln(F("SD: Initializing SD card"));
   if (!card.init(SPI_HALF_SPEED, 4)) {
-    Log.errorln(F("initialization failed!"));
+    Log.errorln(F("SD: Initialization failed!"));
     while (1);
   }
 
   // get the volume and root dir from the card
   if (!volume.init(card)) {
-    Log.errorln(F("could not find FAT16/FAT32 partition on SD card"));
+    Log.errorln(F("SD: Could not find FAT16/FAT32 partition on SD card"));
     while (1);
   }
   root.openRoot(volume);
@@ -108,7 +107,7 @@ const char *read_file_from_sd(const char *filename) {
   char *buffer = new char[size];
   int error = config_file.read(buffer, size);
   if (error) {
-    Log.errorln(F("failed to read file: %s"), filename);
+    Log.errorln(F("SD Failed to read file: %s"), filename);
     while(1);
   }
 
@@ -117,15 +116,39 @@ const char *read_file_from_sd(const char *filename) {
   return buffer;
 }
 
+char *Config::copy_value(JsonObject obj, const char *key)
+{
+  const char *source;
+  char *dest;
+  int length;
+
+  if (obj.containsKey(key)) {
+    source = obj[key];
+    length = strlen(source) + 1;
+    dest = (char *)malloc(length * sizeof(char));
+    if (dest == nullptr) {
+      Log.errorln(F("CONFIG: unable to allocate memory for string"));
+      while(1);
+    }
+    strncpy(dest, source, length);
+  } else {
+    dest = NULL;
+  }
+
+  return dest;
+}
+
 void Config::parse_json()
 {
   int length;
+
+  Log.traceln(F("CONFIG: Loading JSON"));
 
   // read into the json doc
   DynamicJsonDocument config_doc(2048);
   DeserializationError error = deserializeJson(config_doc, buffer);
   if (error) {
-    Log.errorln(F("failed to deserialize JSON"));
+    Log.errorln(F("CONFIG: failed to deserialize JSON"));
     while(1);
   }
 
@@ -133,22 +156,23 @@ void Config::parse_json()
   JsonObject json_root = config_doc.as<JsonObject>();
   if (json_root == nullptr || 
        !json_root.containsKey("misc") ||
+       !json_root.containsKey("network") ||
        !json_root.containsKey("buttons") ||
        !json_root.containsKey("targets")) {
-    Log.errorln(F("JSON document does exist or does not contain required keys: 'misc', 'buttons' and/or 'targets'"));
+    Log.errorln(F("CONFIG: JSON document does exist or does not contain required keys: 'misc', 'buttons' and/or 'targets'"));
     while(1);
   }
 
   // get the misc config
   JsonObject json_misc = json_root["misc"].as<JsonObject>();
   if (json_misc == nullptr) {
-    Log.errorln(F("JSON document does not have a 'misc' object"));
+    Log.errorln(F("CONFIG: JSON document does not have a 'misc' object"));
     while(1);
   }
 
   misc = (ConfigMisc*)malloc(sizeof(ConfigMisc));
   if (misc == nullptr) {
-    Log.errorln(F("unable to allocate memory for misc config"));
+    Log.errorln(F("CONFIG: Unable to allocate memory for misc config"));
     while(1);
   }
   
@@ -158,119 +182,55 @@ void Config::parse_json()
   // get the network config
   JsonObject json_network = json_root["network"].as<JsonObject>();
   if (json_network == nullptr) {
-    Log.errorln(F("JSON document does not have a 'network' object"));
+    Log.errorln(F("CONFIG: JSON document does not have a 'network' object"));
     while(1);
   }
 
   // network config
   network = (ConfigNetwork*)malloc(sizeof(ConfigNetwork));
   if (network == nullptr) {
-    Log.errorln(F("unable to allocate memory for network config"));
+    Log.errorln(F("CONFIG: Unable to allocate memory for network config"));
     while(1);
   }
 
   // ethernet config
   network->ethernet = (ConfigNetworkEthernet*)malloc(sizeof(ConfigNetworkEthernet));
   if (network->ethernet == nullptr) {
-    Log.errorln(F("unable to allocate memory for ethernet network config"));
+    Log.errorln(F("CONFIG: Unable to allocate memory for ethernet network config"));
     while(1);
   }
 
-  // allocate space for the MAC string and copy
-  length = strlen(json_network["ethernet"]["mac"].as<const char *>()) + 1;
-  network->ethernet->mac = (char *)malloc(length * sizeof(char));
-  if (network->ethernet->mac == nullptr) {
-    Log.errorln(F("unable to allocate memory for MAC address string"));
-    while(1);
-  }
-  strncpy(network->ethernet->mac, json_network["ethernet"]["mac"].as<const char *>(), length);
-  
-  // allocate space for the IP config and copy
-  length = strlen(json_network["ethernet"]["ip"].as<const char *>()) + 1;
-  network->ethernet->ip = (char *)malloc(length * sizeof(char));
-  if (network->ethernet->ip == nullptr) {
-    Log.errorln(F("unable to allocate memory for ip string"));
-    while(1);
-  }
-  strncpy(network->ethernet->ip, json_network["ethernet"]["ip"].as<const char *>(), length);
-
-  length = strlen(json_network["ethernet"]["mask"].as<const char *>()) + 1;
-  network->ethernet->mask = (char *)malloc(length * sizeof(char));
-  if (network->ethernet->mask == nullptr) {
-    Log.errorln(F("unable to allocate memory for netmask string"));
-    while(1);
-  }
-  strncpy(network->ethernet->mask, json_network["ethernet"]["mask"].as<const char *>(), length);
-
-  length = strlen(json_network["ethernet"]["gw"].as<const char *>()) + 1;
-  network->ethernet->gw = (char *)malloc(length * sizeof(char));
-  if (network->ethernet->gw == nullptr) {
-    Log.errorln(F("unable to allocate memory for gateway string"));
-    while(1);
-  }
-  strncpy(network->ethernet->gw, json_network["ethernet"]["gw"].as<const char *>(), length);
+  network->ethernet->mac = copy_value(json_network["ethernet"], "mac");
+  network->ethernet->ip = copy_value(json_network["ethernet"], "ip");
+  network->ethernet->mask = copy_value(json_network["ethernet"], "mask");
+  network->ethernet->gw = copy_value(json_network["ethernet"], "gw");
+  network->ethernet->dns = copy_value(json_network["ethernet"], "dns");
 
   // WIFI config
   network->wifi = (ConfigNetworkWifi*)malloc(sizeof(ConfigNetworkWifi));
   if (network->wifi == nullptr) {
-    Log.errorln(F("unable to allocate memory for WIFI network config"));
+    Log.errorln(F("CONFIG: Unable to allocate memory for WIFI network config"));
     while(1);
   }
 
-  // allocate space for the SSID string and copy
-  length = strlen(json_network["wifi"]["ssid"].as<const char *>()) + 1;
-  network->wifi->ssid = (char *)malloc(length * sizeof(char));
-  if (network->wifi->ssid == nullptr) {
-    Log.errorln(F("unable to allocate memory for SSID string"));
-    while(1);
-  }
-  strncpy(network->wifi->ssid, json_network["wifi"]["ssid"].as<const char *>(), length);
-
-  // allocate space for the SSID key and copy
-  length = strlen(json_network["wifi"]["key"].as<const char *>()) + 1;
-  network->wifi->key = (char *)malloc(length * sizeof(char));
-  if (network->wifi->key == nullptr) {
-    Log.errorln(F("unable to allocate memory for SSID key string"));
-    while(1);
-  }
-  strncpy(network->wifi->key, json_network["wifi"]["key"].as<const char *>(), length);
-
-  // allocate space for the IP config and copy
-  length = strlen(json_network["wifi"]["ip"].as<const char *>()) + 1;
-  network->wifi->ip = (char *)malloc(length * sizeof(char));
-  if (network->wifi->ip == nullptr) {
-    Log.errorln(F("unable to allocate memory for ip string"));
-    while(1);
-  }
-  strncpy(network->wifi->ip, json_network["wifi"]["ip"].as<const char *>(), length);
-
-  length = strlen(json_network["wifi"]["mask"].as<const char *>()) + 1;
-  network->wifi->mask = (char *)malloc(length * sizeof(char));
-  if (network->wifi->mask == nullptr) {
-    Log.errorln(F("unable to allocate memory for netmask string"));
-    while(1);
-  }
-  strncpy(network->wifi->mask, json_network["wifi"]["mask"].as<const char *>(), length);
-
-  length = strlen(json_network["wifi"]["gw"].as<const char *>()) + 1;
-  network->wifi->gw = (char *)malloc(length * sizeof(char));
-  if (network->wifi->gw == nullptr) {
-    Log.errorln(F("unable to allocate memory for gateway string"));
-    while(1);
-  }
-  strncpy(network->wifi->gw, json_network["wifi"]["gw"].as<const char *>(), length);
+  network->wifi->ssid = copy_value(json_network["wifi"], "ssid");
+  network->wifi->key = copy_value(json_network["wifi"], "key");
+  network->wifi->ip = copy_value(json_network["wifi"], "ip");
+  network->wifi->mask = copy_value(json_network["wifi"], "mask");
+  network->wifi->gw = copy_value(json_network["wifi"], "gw");
+  network->wifi->dns = copy_value(json_network["wifi"], "dns");
 
   // get the buttons
   JsonArray json_buttons = json_root["buttons"].as<JsonArray>();
   if (json_buttons == nullptr) {
-    Log.errorln(F("JSON document does not have a 'buttons' array"));
+    Log.errorln(F("CONFIG: JSON document does not have a 'buttons' array"));
     while(1);
   }
 
   button_count = json_buttons.size();
   buttons = (ConfigButton**)malloc(button_count * sizeof(ConfigButton*));
   if (buttons == nullptr) {
-    Log.errorln(F("unable to allocate memory for buttons config"));
+    Log.errorln(F("CONFIG: Unable to allocate memory for buttons config"));
     while(1);
   }
   
@@ -279,7 +239,7 @@ void Config::parse_json()
     // allocate space
     buttons[_button] = (ConfigButton*)malloc(sizeof(ConfigButton));
     if (buttons[_button] == nullptr) {
-      Log.errorln(F("unable to allocate memory for button"));
+      Log.errorln(F("CONFIG: Unable to allocate memory for button"));
       while(1);
     }
 
@@ -290,15 +250,7 @@ void Config::parse_json()
     buttons[_button]->button_intr = obj["button_intr"];
     buttons[_button]->button_code = obj["button_code"];
     buttons[_button]->target = obj["target"];
-    
-    // allocate space for the OSC string and copy
-    int length = strlen(obj["osc_string"].as<const char *>()) + 1;
-    buttons[_button]->osc_string = (char *)malloc(length * sizeof(char));
-    if (buttons[_button]->osc_string == nullptr) {
-      Log.errorln(F("unable to allocate memory for osc string"));
-      while(1);
-    }
-    strncpy(buttons[_button]->osc_string, obj["osc_string"].as<const char *>(), length);
+    buttons[_button]->osc_string = copy_value(obj, "osc_string");
 
     // get the button type
     if (strncmp(obj["button_type"], "wired", 5) == 0) {
@@ -306,7 +258,7 @@ void Config::parse_json()
     } else if (strncmp(obj["button_type"], "wireless", 8) == 0) {
       buttons[_button]->button_type = BUTTON_WIRELESS;
     } else {
-      Log.errorln(F("incorrect value for 'button_type' configuration"));
+      Log.errorln(F("CONFIG: Incorrect value for 'button_type' configuration"));
     }
 
     _button++;
@@ -315,14 +267,14 @@ void Config::parse_json()
   // get the targets
   JsonArray json_targets = json_root["targets"].as<JsonArray>();
   if (json_targets == nullptr) {
-    Log.errorln(F("JSON document does not have a 'targets' array"));
+    Log.errorln(F("CONFIG: JSON document does not have a 'targets' array"));
     while(1);
   }
 
   target_count = json_targets.size();
   targets = (ConfigTarget**)malloc(target_count * sizeof(ConfigTarget*));
   if (targets == nullptr) {
-    Log.errorln(F("unable to allocate memory for targets config"));
+    Log.errorln(F("CONFIG: Unable to allocate memory for targets config"));
     while(1);
   }
 
@@ -331,29 +283,21 @@ void Config::parse_json()
     // allocate space
     targets[_target] = (ConfigTarget*)malloc(sizeof(ConfigTarget));
     if (targets[_target] == nullptr) {
-      Log.errorln(F("unable to allocate memory for target"));
+      Log.errorln(F("CONFIG: Unable to allocate memory for target"));
       while(1);
     }
     
-    // copy the integer values
+    // copy the target values
     targets[_target]->id = obj["id"];
     targets[_target]->port = obj["port"];
-
-    // allocate space for the server string and copy
-    int length = strlen(obj["server"].as<const char *>()) + 1;
-    targets[_target]->server = (char *)malloc(length * sizeof(char));
-    if (targets[_target]->server == nullptr) {
-      Log.errorln(F("unable to allocate memory for server string"));
-      while(1);
-    }
-    strncpy(targets[_target]->server, obj["server"].as<const char *>(), length);
+    targets[_target]->server = copy_value(obj, "server");
 
     _target++;
   }
 
   // tracing
-  //Log.traceln(to_string().c_str());
-  Log.traceln(F("loading configuration (end)"));
+  Log.traceln(to_string().c_str());
+  Log.traceln(F("CONFIG: Loading configuration (end)"));
 }
 
 Config::Config(const char *config, const bool read_from_sd)

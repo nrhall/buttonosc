@@ -1,6 +1,7 @@
 #ifndef _Config_H
 #define _Config_H
 
+#include <ArduinoJson.h>
 #include "Button.h"
 
 class ConfigButton {
@@ -77,7 +78,8 @@ class Config {
 
     Config(const char *config, const bool read_from_sd);
     void parse_json();
+    char *copy_value(JsonObject obj, const char *key);
     String to_string();
-  };
+};
 
 #endif

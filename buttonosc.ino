@@ -9,40 +9,89 @@ ButtonOSC *buttonOSC;
 // setup
 void setup() {
   // open the serial port for debugging
-  Serial.begin(9600);
-  while(!Serial && !Serial.available()){}
+  Serial.begin(2000000);
+  while(!Serial){}
+  delay(1000);
 
   // initialise logging
   Log.begin(LOG_LEVEL_VERBOSE, &Serial);
+  Log.setShowLevel(false);
 
   // load configuration
   //Config *config = new Config("config.txt", true);
   const char *json = R"(
 {
   "misc": {
-    "heartbeat_pin": 4
+    "heartbeat_pin": 9
   },
   "network": {
     "ethernet": {
-      "mac": "A8:61:0A:AF:00:16",
-      "ip": "",
-      "mask": "",
-      "gw": "",
-      "dns": ""
+      "mac": "A8:61:0A:AF:00:16"
     },
     "wifi": {
-      "ssid": "HFIoT",
-      "key": "Dz5gQpBx8By2Jcwbk2YE",
-      "ip": "",
-      "mask": "",
-      "gw": "",
-      "dns": ""
     }
   },
   "buttons": [
     {
       "id": 0,
       "led_pin": 2,
+      "button_pin": 54,
+      "button_type": "wired",
+      "osc_string": "/cue/keyboard/playhead/previous",
+      "target": 0
+    },
+    {
+      "id": 1,
+      "led_pin": 3,
+      "button_pin": 55,
+      "button_type": "wired",
+      "osc_string": "/cue/keyboard/playhead/next",
+      "target": 0
+    },
+    {
+      "id": 2,
+      "led_pin": 5,
+      "button_pin": 56,
+      "button_type": "wired",
+      "osc_string": "/cue/keyboard/go",
+      "target": 0
+    },
+    {
+      "id": 3,
+      "led_pin": 6,
+      "button_pin": 57,
+      "button_type": "wired",
+      "osc_string": "/cue/keyboard/panic",
+      "target": 0
+    }
+  ],
+  "targets": [
+    {
+      "id": 0,
+      "server": "10.0.1.247",
+      "port": 53000
+    }
+  ]
+}
+)";
+const char *json1 = R"(
+{
+  "misc": {
+    "heartbeat_pin": 2
+  },
+  "network": {
+    "ethernet": {
+      "mac": "A8:61:0A:AF:16:94"
+    },
+    "wifi": {
+      "ssid": "HFIoT",
+      "key": "Dz5gQpBx8By2Jcwbk2YE"
+    }
+  },
+  "buttons": [
+    {
+      "id": 0,
+      "led_pin": 1,
       "button_intr": 0,
       "button_type": "wireless",
       "button_code": 1084081,
@@ -53,13 +102,14 @@ void setup() {
   "targets": [
     {
       "id": 0,
-      "server": "10.0.1.227",
+      "server": "10.0.1.247",
       "port": 53000
     }
   ]
 }
 )";
-  Config *config = new Config(json, false);
+
+  Config *config = new Config(json1, false);
   config->parse_json();
 
   // setup networking
