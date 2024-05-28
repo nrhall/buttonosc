@@ -12,7 +12,7 @@ class ConfigButton {
     unsigned int button_intr;
     unsigned long button_code;
     ButtonType button_type;
-    char* osc_string;
+    char *osc_string;
     unsigned int target;
 
     String to_string();
@@ -21,7 +21,7 @@ class ConfigButton {
 class ConfigTarget {
   public:
     unsigned int id;
-    char* server;
+    char *server;
     unsigned int port;
 
     String to_string();
@@ -36,31 +36,31 @@ class ConfigMisc {
 
 class ConfigNetworkEthernet {
   public:
-    char* mac;
-    char* ip;
-    char* mask;
-    char* gw;
-    char* dns;
+    char *mac;
+    char *ip;
+    char *mask;
+    char *gw;
+    char *dns;
 
     String to_string();
 };
 
 class ConfigNetworkWifi {
   public:
-    char* ssid;
-    char* key;
-    char* ip;
-    char* mask;
-    char* gw;
-    char* dns;
+    char *ssid;
+    char *key;
+    char *ip;
+    char *mask;
+    char *gw;
+    char *dns;
 
     String to_string();
 };
 
 class ConfigNetwork {
   public:
-    ConfigNetworkEthernet* ethernet;
-    ConfigNetworkWifi* wifi;
+    ConfigNetworkEthernet *ethernet;
+    ConfigNetworkWifi *wifi;
 
     String to_string();
 };
@@ -69,10 +69,10 @@ class Config {
   private:
     const char *buffer;
   public:
-    ConfigMisc* misc;
-    ConfigNetwork* network;
-    ConfigButton** buttons;
-    ConfigTarget** targets;
+    ConfigMisc *misc;
+    ConfigNetwork *network;
+    ConfigButton **buttons;
+    ConfigTarget **targets;
     int button_count;
     int target_count;
 

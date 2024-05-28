@@ -6,7 +6,7 @@
 
 class ButtonOSC {
   private:
-    Button** _buttons;
+    Button **_buttons;
     ezLED *_heartbeat_led;
     Config *_config;
 
@@ -16,9 +16,9 @@ class ButtonOSC {
 };
 
 struct OSCContext {
-  char* server;
+  char *server;
   unsigned int port;
-  char* string;
-  IPAddress* server_ip;
+  char *string;
+  IPAddress *server_ip;
   NetworkType network_type;
 };

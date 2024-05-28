@@ -12,22 +12,30 @@ static void onButtonClick(void *context) {
   OSCContext* osc_context = (OSCContext*)context;
   unsigned long start = millis();
 
-  Log.trace(F("OSC: %s %d %s"), osc_context->server, osc_context->port, osc_context->string);
+  Log.trace(F("OSC: %s %u %s"), osc_context->server, (unsigned long)(osc_context->port), osc_context->string);
 
   // create the OSC message
   OSCMessage msg(osc_context->string);
 
   // send the OSC message
   if (osc_context->network_type == WIRED) {
-    eth_udp.beginPacket(*(osc_context->server_ip), osc_context->port);
-    msg.send(eth_udp);
-    eth_udp.endPacket();
+    if (!eth_udp.available()) {
+      Log.errorln(F("OSC: UDP is not available, unable to send"));
+    } else {
+      eth_udp.beginPacket(*(osc_context->server_ip), osc_context->port);
+      msg.send(eth_udp);
+      eth_udp.endPacket();
+    }
   }
 #ifdef ARDUINO_UNOR4_WIFI 
   else if (osc_context->network_type == WIRELESS) {
-    wifi_udp.beginPacket(*(osc_context->server_ip), osc_context->port);
-    msg.send(wifi_udp);
-    wifi_udp.endPacket();
+    if (!wifi_udp.available()) {
+      Log.errorln(F("OSC: UDP is not available, unable to send"));
+    } else {
+      wifi_udp.beginPacket(*(osc_context->server_ip), osc_context->port);
+      msg.send(wifi_udp);
+      wifi_udp.endPacket();
+    }
   }
 #endif
   Log.traceln(F(" (%ums)"), millis() - start);  
@@ -60,7 +68,7 @@ ButtonOSC::ButtonOSC(Config* config, NetworkType network_type) : _config(config)
         _buttons[i] = new WirelessButton(i, button->button_intr, button->button_code, button->led_pin, (void *)osc_context, onButtonClick);
         break;
       default:
-        Log.errorln(F("invalid button type: %d"), button->button_type);
+        Log.errorln(F("BUTTON: invalid button type: %d"), button->button_type);
     }
   }
 
@@ -76,9 +84,6 @@ ButtonOSC::ButtonOSC(Config* config, NetworkType network_type) : _config(config)
     wifi_udp.begin(54000);
   }
 #endif
-  else {
-    Log.errorln(F("no network found"));
-  }
 }
 
 void ButtonOSC::loop() {

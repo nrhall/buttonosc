@@ -9,7 +9,7 @@ ButtonOSC *buttonOSC;
 // setup
 void setup() {
   // open the serial port for debugging
-  Serial.begin(2000000);
+  Serial.begin(1000000);
   while(!Serial){}
   delay(1000);
 
@@ -68,7 +68,7 @@ void setup() {
   "targets": [
     {
       "id": 0,
-      "server": "10.0.1.247",
+      "server": "192.168.11.50",
       "port": 53000
     }
   ]
@@ -111,18 +111,21 @@ const char *json1 = R"(
   "targets": [
     {
       "id": 0,
-      "server": "10.0.1.247",
+      "server": "192.168.11.50",
       "port": 53000
     }
   ]
 }
 )";
 
-  Config *config = new Config(json1, false);
+  Config *config = new Config(json, false);
   config->parse_json();
 
   // setup networking
   NetworkType network_type = network_setup(config);
+  if (network_type == NONE) {
+    Log.errorln(F("NET: No network found (please check the network link or WIFI configuration)"));
+  }
 
   // setup the buttons
   buttonOSC = new ButtonOSC(config, network_type);
